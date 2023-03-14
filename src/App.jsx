@@ -9,27 +9,60 @@ import {
   SimpleGrid,
   Text,
 } from '@chakra-ui/react';
+// need import ethers for wallet
+import { ethers } from "ethers";
 import { Alchemy, Network } from 'alchemy-sdk';
 import { useState } from 'react';
 
+//ethers for wallet
+const provider = new ethers.providers.Web3Provider(window.ethereum);
+
 function App() {
+
+  //connect wallet
+  async function connectWallet() {
+    if(!window.ethereum){
+      alert("MetaMask is not installed!")
+    } 
+    const accounts = await provider.send('eth_requestAccounts', []);
+    setAccount(accounts[0]);
+  }
+
+
   const [userAddress, setUserAddress] = useState('');
   const [results, setResults] = useState([]);
   const [hasQueried, setHasQueried] = useState(false);
   const [tokenDataObjects, setTokenDataObjects] = useState([]);
 
+  //get nfts 
   async function getNFTsForOwner() {
     const config = {
-      apiKey: '<-- COPY-PASTE YOUR ALCHEMY API KEY HERE -->',
+      apiKey: '4OwtEJoKoCLjm0T5myGkeMtrgd6-DJcL' ,
       network: Network.ETH_MAINNET,
     };
-
     const alchemy = new Alchemy(config);
+
+        // error checking and ens checking
+        //const addr = document.getElementById('inputAddress').value;
+        const isAddress = ethers.utils.isAddress(userAddress);
+        const isENS = await alchemy.core.resolveName(userAddress);
+    
+        if (!isAddress && isENS == null){
+          alert("Please type a valid address!");
+        } else {
+          const data = await alchemy.nft.getNftsForOwner(userAddress);
+          setResults(data);
+        }
+  
+        
+
     const data = await alchemy.nft.getNftsForOwner(userAddress);
     setResults(data);
 
     const tokenDataPromises = [];
 
+
+    // array for nfts and promises for mapping later
     for (let i = 0; i < data.ownedNfts.length; i++) {
       const tokenData = alchemy.nft.getNftMetadata(
         data.ownedNfts[i].contract.address,
@@ -52,6 +85,12 @@ function App() {
           <Heading mb={0} fontSize={36}>
             NFT Indexer 🖼
           </Heading>
+
+          <Button variant="outline" onClick={connectWallet} size="sm" bgColor="silver">
+        Connect Wallet
+        </Button>
+
+
           <Text>
             Plug in an address and this website will return all of its NFTs!
           </Text>
@@ -73,7 +112,7 @@ function App() {
           bgColor="white"
           fontSize={24}
         />
-        <Button fontSize={20} onClick={getNFTsForOwner} mt={36} bgColor="blue">
+        <Button fontSize={20} onClick={getNFTsForOwner} mt={36} bgColor="silver">
           Fetch NFTs
         </Button>
 
@@ -85,8 +124,8 @@ function App() {
               return (
                 <Flex
                   flexDir={'column'}
-                  color="white"
-                  bg="blue"
+                  color="black"
+                  bg="none"
                   w={'20vw'}
                   key={e.id}
                 >
